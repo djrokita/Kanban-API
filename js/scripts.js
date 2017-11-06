@@ -1,19 +1,62 @@
 $(document).ready(function() {
 
-/*  function randomString() {
+  var baseUrl = 'https://kodilla.com/pl/bootcamp-api';
+  var prefix = "https://cors-anywhere.herokuapp.com/";
+
+  var myHeader = {
+    'X-Client-Id': '2341',
+    'X-Auth-Token': 'b7da6395d9aac5dd5bcdadeef0e0cc85'
+  };
+
+  $.ajaxSetup({
+    headers: {
+    'X-Client-Id': '2341',
+    'X-Auth-Token': 'b7da6395d9aac5dd5bcdadeef0e0cc85'  
+    }
+  });
+
+  $.ajax({
+    url: baseUrl,
+    method: 'GET',
+    headers: {
+      'X-Client-Id': '2341',
+      'X-Auth-Token': 'b7da6395d9aac5dd5bcdadeef0e0cc85'
+    },
+    success: function(response) {
+      setupColumn(response.column);
+    }
+  });
+
+  function setupColumn(columns) {
+    var board = setNewBoard('Kodilla');
+    columns.forEach(function(item) {
+      var col = new Column(item.id, item.name);
+      board.addColumn(col);
+      setupCard(col, item.cards);
+    });
+  }
+
+  function setupCard(col, cards) {
+    cards.forEach(function(item) {
+      var card = new Card(item.id, item.name, item.bootcamp_kanban_column_id);
+      col.addCard(item.name);
+    });
+  }
+
+/*
+  function randomString() {
     var chars = '0123456789abcdefghiklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXTZ';
     var str = '';
     for (i = 0; i < 10; i++) {
       str += chars[Math.floor(Math.random() * chars.length)];
     }
     return str;
-  } 
+  }
 */
-  
-  function Column(name) {
+  function Column(id, name) {
     var self = this;
-  //  this.id = randomString();
-    this.name = name;
+    this.id = id;
+    this.name = name || 'No given name';
     this.$element = createColumn();
 
     function createColumn() {
@@ -28,10 +71,23 @@ $(document).ready(function() {
       $columnDelete.click(function() {
         self.removeColumn();
       });
+
       $columnAddCard.click(function() {
         var newCard = prompt('Enter the name of the card', 'New Card');
         if (newCard == '') newCard = 'Action we need to do';
         if (newCard != null) self.addCard(new Card(newCard));
+        $.ajax({
+          url: baseUrl + '/card',
+          method: 'post',
+          data: {
+            name: newCard,
+            bootcamp_kanban_column_id: self.id
+          },
+          success: function(response) {
+            var card = new Card(response.id, newCard);
+            self.addCard(card);
+          }
+        });
       });
 
       $column.append($columnTitle);
@@ -49,20 +105,31 @@ $(document).ready(function() {
     this.$element.children('ul').prepend(card.$element); //Małe udoskonalenie - zamiana z 'append' na 'prepand';)
     checkList();
   };
-
+/*
   Column.prototype.removeColumn = function() {
     this.$element.remove();
   };
-
-  function Card(description) {
+*/
+  Column.prototype.removeColumn = function() {
     var self = this;
-    //this.id = randomString();
-    this.description = description;
+    $.ajax({
+      url: baseUrl + '/column/' + self.id,
+      method: 'delete',
+      success: function(response) {
+        self.$element.remove();
+      }
+    });
+  }
+
+  function Card(id, name) {
+    var self = this;
+    this.id = id;
+    this.description = name || 'No given name';
     this.$element = createCard();
 
     function createCard() {
       var $card = $('<li>').addClass('card');
-      var $cardDescription = $('<p>').addClass('card-description').text(self.description);
+      var $cardDescription = $('<p>').addClass('card-description').text(self.name);
       var $cardDelete = $('<button>').addClass('btn-delete').text('x');
 
       $cardDelete.click(function() {
@@ -87,7 +154,14 @@ $(document).ready(function() {
 
   Card.prototype = {
     removeCard: function() {
-      this.$element.remove();
+      var self = this;
+      $.ajax({
+        url: baseUrl + '/card' + self.id,
+        method: 'delete',
+        success: function() {
+          self.$element.remove();
+        }
+      });
     }
   };
 
@@ -147,11 +221,20 @@ $(document).ready(function() {
     var columnName = prompt('Enter a column name', 'New Column');
     if (columnName == '') columnName = 'New Column';
     if (columnName != null) {
-      var column = new Column(columnName);
-      column.$element.appendTo($(this).siblings('.column-container'));
-      column.$element.hide();
-      column.$element.fadeIn('slow');
-      initSortable();
+      $.ajax({
+        url: baseUrl + '/column',
+        method: 'post',
+        data: {
+          name: columnName
+        },
+        success: function(response) {
+          var column = new Column(response.id, columnName);
+          column.$element.appendTo($(this).siblings('.column-container'));
+          column.$element.hide();
+          column.$element.fadeIn('slow');
+          initSortable();          
+        }
+      });
     }
   }
 
@@ -176,7 +259,7 @@ $(document).ready(function() {
     if (boardName == '') boardName = 'New Kanban Board';
     if (boardName != null) setNewBoard(boardName);
   });
-
+/*
     //Tworzenie tablicy
   var board = setNewBoard('Kanban');
 
@@ -197,6 +280,6 @@ $(document).ready(function() {
   // DODAWANIE KART DO KOLUMN
   todoColumn.addCard(card1);
   doingColumn.addCard(card2);
-
+*/
   checkList();
 });
