@@ -8,6 +8,7 @@ $(document).ready(function() {
     'X-Client-Id': '2341',
     'X-Auth-Token': 'b7da6395d9aac5dd5bcdadeef0e0cc85'
   };
+  
   //Klasy
 
   function Board(name, num) {
@@ -113,7 +114,6 @@ $(document).ready(function() {
 
       $card.mouseup(function() {
         checkList();
-
       });
 
       return $card;
@@ -234,7 +234,6 @@ $(document).ready(function() {
     return temp;
   }
 
-
   function setNewColumn(name) {
     if (name != null) {
       $.ajax({
@@ -270,7 +269,6 @@ $(document).ready(function() {
       else $(this).find('.fake').show();
     });
   }
-
 
   $.ajax({
     url: baseUrl + '/board',
