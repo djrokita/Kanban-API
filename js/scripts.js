@@ -1,62 +1,83 @@
 $(document).ready(function() {
 
-  var baseUrl = 'https://kodilla.com/pl/bootcamp-api';
-  var prefix = "https://cors-anywhere.herokuapp.com/";
+	var url = 'https://kodilla.com/pl/bootcamp-api';
+  var prefix = 'https://cors-anywhere.herokuapp.com/';
+  var baseUrl = prefix + url;
 
   var myHeader = {
     'X-Client-Id': '2341',
     'X-Auth-Token': 'b7da6395d9aac5dd5bcdadeef0e0cc85'
   };
 
-  $.ajaxSetup({
-    headers: {
-    'X-Client-Id': '2341',
-    'X-Auth-Token': 'b7da6395d9aac5dd5bcdadeef0e0cc85'  
-    }
-  });
-
   $.ajax({
-    url: baseUrl,
+    url: baseUrl + '/board',
     method: 'GET',
-    headers: {
-      'X-Client-Id': '2341',
-      'X-Auth-Token': 'b7da6395d9aac5dd5bcdadeef0e0cc85'
-    },
+    headers: myHeader,
     success: function(response) {
-      setupColumn(response.column);
+      setBoard(response);
     }
   });
 
-  function setupColumn(columns) {
-    var board = setNewBoard('Kodilla');
-    columns.forEach(function(item) {
+  //Tworzenie obiektów
+  function setBoard(name) {
+    var board = new Board(name.name);
+    $('.container').append(board.$element);
+    name.columns.forEach(function(item) {
       var col = new Column(item.id, item.name);
       board.addColumn(col);
+      console.log(name.columns.length);
       setupCard(col, item.cards);
+    })
+    board.$element.hide();
+    board.$element.slideDown('slow');
+    return board;
+  }
+
+  function setupColumn(id, columns) {
+    columns.forEach(function(item) {
+      var col = new item(item.id, item.name);
+      board.addColumn(col);
+      setupCard(col, item.cards);
+      console.log('setupColumn dziala');
     });
   }
 
   function setupCard(col, cards) {
     cards.forEach(function(item) {
       var card = new Card(item.id, item.name, item.bootcamp_kanban_column_id);
-      col.addCard(item.name);
+      console.log('Kanban ID ', item.bootcamp_kanban_column_id);
+      console.log(card);
+      col.addCard(card);
     });
   }
 
-/*
-  function randomString() {
-    var chars = '0123456789abcdefghiklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXTZ';
-    var str = '';
-    for (i = 0; i < 10; i++) {
-      str += chars[Math.floor(Math.random() * chars.length)];
+  //Klasy
+  
+  function Board(name, num) {
+    var self = this;
+    this.name = name;
+    this.$element = createBoard();
+
+    function createBoard() {
+      var $board = $('<div>').addClass('board');
+      var $container = $('<div>').addClass('column-container');
+      var $boardTitle = $('<h1>').text(self.name);
+      var $setColumn = $('<button>').addClass('create-column').text('new column');
+
+      $setColumn.click(newColumn);
+
+      $board.append($boardTitle);
+      $board.append($setColumn);
+      $board.append($container);
+
+      return $board;
     }
-    return str;
   }
-*/
+ 
   function Column(id, name) {
     var self = this;
     this.id = id;
-    this.name = name || 'No given name';
+    this.name = name;
     this.$element = createColumn();
 
     function createColumn() {
@@ -68,26 +89,16 @@ $(document).ready(function() {
       var $columnAddCard = $('<button>').addClass('add-card').text('new card');
       self.checkList = $('li').length;
 
+      $columnTitle.dblclick(function() {
+      	self.changeColumnName();
+      });
+
       $columnDelete.click(function() {
         self.removeColumn();
       });
 
       $columnAddCard.click(function() {
-        var newCard = prompt('Enter the name of the card', 'New Card');
-        if (newCard == '') newCard = 'Action we need to do';
-        if (newCard != null) self.addCard(new Card(newCard));
-        $.ajax({
-          url: baseUrl + '/card',
-          method: 'post',
-          data: {
-            name: newCard,
-            bootcamp_kanban_column_id: self.id
-          },
-          success: function(response) {
-            var card = new Card(response.id, newCard);
-            self.addCard(card);
-          }
-        });
+        self.newCard();
       });
 
       $column.append($columnTitle);
@@ -97,34 +108,21 @@ $(document).ready(function() {
       $fakeCard.text('Put card here'); // Tekst do dodatkowej karty
       $columnCardList.append($fakeCard);
 
+      $column.click(function() {
+        console.log(self.id);
+        var zbior = $(self).find('.card');
+        console.log(zbior);
+      })
+
       return $column;
     }
   }
 
-  Column.prototype.addCard = function(card) {
-    this.$element.children('ul').prepend(card.$element); //Małe udoskonalenie - zamiana z 'append' na 'prepand';)
-    checkList();
-  };
-/*
-  Column.prototype.removeColumn = function() {
-    this.$element.remove();
-  };
-*/
-  Column.prototype.removeColumn = function() {
-    var self = this;
-    $.ajax({
-      url: baseUrl + '/column/' + self.id,
-      method: 'delete',
-      success: function(response) {
-        self.$element.remove();
-      }
-    });
-  }
-
-  function Card(id, name) {
+  function Card(id, name, colId) {
     var self = this;
     this.id = id;
-    this.description = name || 'No given name';
+    this.name = name;
+    this.bootcamp_kanban_column_id = colId;
     this.$element = createCard();
 
     function createCard() {
@@ -137,6 +135,24 @@ $(document).ready(function() {
         checkList();
       });
 
+    $cardDescription.dblclick(function () {
+      var newName = setName();
+      if (newName != null) {
+      $.ajax({
+        url: baseUrl + '/card/' + self.id,
+        method: 'PUT',
+        headers: myHeader,
+        data: {
+          name: newName,
+          bootcamp_kanban_column_id: self.bootcamp_kanban_column_id
+        },
+        success: function() {
+          self.$element.find('p').text(newName);
+        }
+      });
+    }
+  });
+
       $card.append($cardDelete);
       $card.append($cardDescription);
 
@@ -146,68 +162,17 @@ $(document).ready(function() {
 
       $card.mouseup(function() {
         checkList();
+        
       });
+
+
+        console.log('Self to: ', self);
 
       return $card;
     }
   }
 
-  Card.prototype = {
-    removeCard: function() {
-      var self = this;
-      $.ajax({
-        url: baseUrl + '/card' + self.id,
-        method: 'delete',
-        success: function() {
-          self.$element.remove();
-        }
-      });
-    }
-  };
-
-  function initSortable() {
-    $('.column-card-list').sortable({
-      connectWith: '.column-card-list',
-      placeholder: 'card-placeholder'
-    }).disableSelection();
-  }
-
-  //Dodane ode mnie
-
-  function Board(name, num) {
-    var self = this;
-  //  this.id = randomString();
-    this.name = name;
-    this.$element = createBoard();
-
-    function createBoard() {
-      var $board = $('<div>').addClass('board');
-      var $container = $('<div>').addClass('column-container');
-      var $boardTitle = $('<h1>').text(self.name);
-      var $setColumn = $('<button>').addClass('create-column').text('new column');
-      var $boardDelete = $('<button>').addClass('btn-delete').text('x');
-
-      $boardDelete.click(function() {
-        self.deleteBoard();
-      });
-
-      $setColumn.click(newColumn);
-
-      $board.append($boardTitle);
-      $board.append($setColumn);
-      $board.append($boardDelete);
-      $boardDelete.hide();
-      $boardDelete.show('slow'); //Sposób na "skakanie" buttona X
-      $board.append($container);
-
-      return $board;
-    }
-  }
-
-  Board.prototype.deleteBoard = function() {
-    var deleteDecision = confirm('Are you sure?');
-    if (deleteDecision) this.$element.remove();
-  };
+//Protosy - Board
 
   Board.prototype.addColumn = function (column) {
     this.$element.find('.column-container').append(column.$element);
@@ -216,35 +181,147 @@ $(document).ready(function() {
     initSortable();
   };
 
-
-  function newColumn(name) {
-    var columnName = prompt('Enter a column name', 'New Column');
-    if (columnName == '') columnName = 'New Column';
-    if (columnName != null) {
+//Protosy - Column
+  
+  Column.prototype.newCard = function () {
+  	var self = this;
+  	var newCard = setName();
+   	if (newCard != null) { 
       $.ajax({
-        url: baseUrl + '/column',
-        method: 'post',
+        url: baseUrl + '/card',
+        method: 'POST',
         data: {
-          name: columnName
+          name: newCard,
+          bootcamp_kanban_column_id: self.id
         },
+        headers: myHeader,
         success: function(response) {
-          var column = new Column(response.id, columnName);
-          column.$element.appendTo($(this).siblings('.column-container'));
-          column.$element.hide();
-          column.$element.fadeIn('slow');
-          initSortable();          
+          var card = new Card(response.id, newCard);
+          self.addCard(card);
+          console.log('Nowa karta działa');
+        }
+      });
+  	}
+  }
+
+  Column.prototype.addCard = function(card) {
+    this.$element.find('.column-card-list').prepend(card.$element); //Małe udoskonalenie - zamiana z 'append' na 'prepand';)    
+    checkList();
+  };
+
+  Column.prototype.removeColumn = function() {
+    var self = this;
+    $.ajax({
+      url: baseUrl + '/column/' + self.id,
+      method: 'DELETE',
+      headers: myHeader,
+      success: function() {
+        self.$element.remove();
+      }
+    });
+  }
+
+  Column.prototype.changeColumnName = function() {
+  var self = this;
+  var newName = setName();
+  console.log(self.id); 
+  if (newName != null) {
+    $.ajax({
+      url: baseUrl + '/column/' + self.id,
+      method: 'PUT',
+      headers: myHeader,
+      data: {
+        name: newName
+      },
+      success: function() {
+        self.$element.find('h2').text(newName);
+      }
+    });
+  }
+}
+
+// Protosy - Card
+
+  	Card.prototype.proba = function() {
+  		console.log('Proto działa');
+  	}
+
+	Card.prototype.changeCardName = function() {
+		var self = this;
+		var newName = setName();
+		console.log(self.id);	
+		if (newName != null) {
+			$.ajax({
+				url: baseUrl + '/card/' + self.id,
+				method: 'PUT',
+				headers: myHeader,
+				data: {
+					name: newName,
+					bootcamp_kanban_column_id: self.bootcamp_kanban_column_id
+				},
+				success: function() {
+					self.$element.find('p').text(newName);
+				}
+			});
+		}
+	}
+
+  Card.prototype = {
+    removeCard: function() {
+      var self = this;
+      console.log(self.id);
+      $.ajax({
+        url: baseUrl + '/card/' + self.id,
+        method: 'DELETE',
+        headers: myHeader,
+        success: function() {
+          self.$element.remove();
         }
       });
     }
+  };
+
+  //Funkcje do tworzenia elementów Kanban
+
+  function newColumn() {
+    var columnName = setName();
+    setNewColumn(columnName);
   }
 
-  function setNewBoard(name) {
-    var board = new Board(name);
-    $('.operate').after(board.$element);
-    board.$element.hide();
-    board.$element.slideDown('slow');
+  function setName() {
+	var temp = prompt('Enter a name', 'New Element');
+    if (temp == '') temp = 'No name given';
+    return temp;
+	}
 
-    return board;
+
+  function setNewColumn(name) {
+  	if (name != null) {
+      $.ajax({
+        url: baseUrl + '/column',
+        method: 'POST',
+        headers: myHeader,
+        data: {
+          name: name
+        },
+        success: function(response) {
+          var column = new Column(response.id, name);
+          column.$element.appendTo($('.create-column').focus().siblings('.column-container'));
+          column.$element.hide();
+          column.$element.fadeIn('slow');
+          initSortable();
+        }
+      });
+    }
+	}
+
+//Funkcje sortujące karty
+
+  function initSortable() {
+    $('.column-card-list').sortable({
+      connectWith: '.column-card-list',
+      placeholder: 'card-placeholder'
+    }).disableSelection();
   }
 
   function checkList() {
@@ -254,32 +331,5 @@ $(document).ready(function() {
     });
   }
 
-  $('.create-board').click(function() {
-    var boardName = prompt('Enter a board name', 'New Kanban Board');
-    if (boardName == '') boardName = 'New Kanban Board';
-    if (boardName != null) setNewBoard(boardName);
-  });
-/*
-    //Tworzenie tablicy
-  var board = setNewBoard('Kanban');
-
-  // TWORZENIE KOLUMN
-  var todoColumn = new Column('To do');
-  var doingColumn = new Column('Doing');
-  var doneColumn = new Column('Done');
-
-  // DODAWANIE KOLUMN DO TABLICY
-  board.addColumn(todoColumn);
-  board.addColumn(doingColumn);
-  board.addColumn(doneColumn);
-
-  // TWORZENIE NOWYCH EGZEMPLARZY KART
-  var card1 = new Card('New task');
-  var card2 = new Card('Create kanban boards');
-
-  // DODAWANIE KART DO KOLUMN
-  todoColumn.addCard(card1);
-  doingColumn.addCard(card2);
-*/
   checkList();
 });
