@@ -104,6 +104,10 @@ button {
 	font-style: italic;
 }
 
+.card > p:hover {
+	cursor: pointer;
+}
+
 .add-card {
 	padding: 10px 10px;
 	background: #b8d1cf;
