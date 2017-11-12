@@ -28,12 +28,14 @@ body {
 	margin-left: auto;
 	text-align: center;
 	position: relative;
+	padding-top: 20px;
 }
 
 .board h1 {
 	text-shadow: 2px 2px 2px black;
 	color: #fff;
 	background: rgba(0, 0, 0, 0.3);
+	margin-top: 0;
 	margin-bottom: 0;
 }
 
