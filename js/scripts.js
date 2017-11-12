@@ -8,7 +8,7 @@ $(document).ready(function() {
     'X-Client-Id': '2341',
     'X-Auth-Token': 'b7da6395d9aac5dd5bcdadeef0e0cc85'
   };
-  
+
   //Klasy
 
   function Board(name, num) {
@@ -90,32 +90,14 @@ $(document).ready(function() {
       });
 
       $cardDescription.dblclick(function() {
-        var newName = setName();
-        if (newName != null) {
-          $.ajax({
-            url: baseUrl + '/card/' + self.id,
-            method: 'PUT',
-            headers: myHeader,
-            data: {
-              name: newName,
-              bootcamp_kanban_column_id: self.bootcamp_kanban_column_id
-            },
-            success: function() {
-              self.$element.find('p').text(newName);
-            }
-          });
-        }
+        self.changeCardName();
       });
 
       $card.append($cardDelete);
       $card.append($cardDescription);
+
       $card.data('id', self.id);
       $card.data('name', self.name);
-
-      $card.hover(function() {
-        cardId = $(this).data('id');
-        cardName = $(this).find('p').text();
-      })
 
       return $card;
     }
@@ -188,47 +170,7 @@ $(document).ready(function() {
   };
 
   // Protosy - Card
-/*
-  Card.prototype.changeCardName = function() {
-    var self = this;
-    var newName = setName();
-    if (newName != null) {
-      $.ajax({
-        url: baseUrl + '/card/' + self.id,
-        method: 'PUT',
-        headers: myHeader,
-        data: {
-          name: newName,
-          bootcamp_kanban_column_id: self.bootcamp_kanban_column_id
-        },
-        success: function() {
-          self.$element.find('p').text(newName);
-        }
-      });
-    }
-  };
 
-  Card.prototype.newPosition = function() {
-    var self = this;
-    var x = ($(this).parent().data('id'));
-    console.log('ID kolumny: ', x);
-    var y = $(this).children().data('id');
-    console.log('ID karty: ', y);
-    $.ajax({
-      url: baseUrl + '/card/' + y,
-      method: 'PUT',
-      headers: myHeader,
-      data: {
-        id: self.id,
-        name: self.name,
-        bootcamp_kanban_column_id: x
-      },
-      success: function() {
-        console.log(self.name);
-      }  
-    })
-  };    
-*/
   Card.prototype = {
     removeCard: function() {
       var self = this;
@@ -240,6 +182,24 @@ $(document).ready(function() {
           self.$element.remove();
         }
       });
+    },
+    changeCardName: function() {
+      var self = this;
+      var newName = setName();
+      if (newName != null) {
+        $.ajax({
+          url: baseUrl + '/card/' + self.id,
+          method: 'PUT',
+          headers: myHeader,
+          data: {
+            name: newName,
+            bootcamp_kanban_column_id: self.bootcamp_kanban_column_id
+          },
+          success: function() {
+            self.$element.find('p').text(newName);
+          }
+        });
+      }
     }
   };
 
@@ -280,11 +240,11 @@ $(document).ready(function() {
 
   function initSortable() {
     $('.column-card-list').sortable({
-      update: function(mouseleave, karta) {       
+      update: function(mouseleave, karta) {
         var columnId = $(this).parents('.column').data('id');
         var movedCard = karta.item;
         console.log('ID karty: ', movedCard.data('id'));
-              
+
         $.ajax({
           url: baseUrl + '/card/' + movedCard.data('id'),
           method: 'PUT',
@@ -296,18 +256,14 @@ $(document).ready(function() {
           success: function() {
             console.log('Przeniesiono');
             checkList();
-          }  
-        })
-},
+          }
+        });
+      },
       connectWith: '.column-card-list',
       placeholder: 'card-placeholder'
     }).disableSelection();
   }
-/*
-  $( ".selector" ).sortable({
-  update: function( event, ui ) {}
-  });
-*/
+
   function checkList() {
     $('.column-card-list').each(function() {
       if ($(this).find('li').length > 1) $(this).find('.fake').hide();
@@ -323,11 +279,6 @@ $(document).ready(function() {
       setBoard(response);
     }
   });
-
-  function countItems() {
-    var liczba = this.$element.find('.column-card-list').children().length;
-    $(this).data('items', liczba);
-  }
 
   //Tworzenie obiektów
 
@@ -349,10 +300,6 @@ $(document).ready(function() {
       var col = new item(item.id, item.name);
       board.addColumn(col);
       setupCard(col, item.cards);
-      /*
-      countItems();
-      console.log($(col));
-      */
     });
   }
 
