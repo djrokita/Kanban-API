@@ -240,11 +240,9 @@ $(document).ready(function() {
 
   function initSortable() {
     $('.column-card-list').sortable({
-      update: function(mouseleave, karta) {
+      update: function(mouseleave, card) {
         var columnId = $(this).parents('.column').data('id');
-        var movedCard = karta.item;
-        console.log('ID karty: ', movedCard.data('id'));
-
+        var movedCard = card.item;
         $.ajax({
           url: baseUrl + '/card/' + movedCard.data('id'),
           method: 'PUT',
