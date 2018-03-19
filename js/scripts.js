@@ -56,7 +56,7 @@ $(document).ready(function() {
       });
 
       $columnAddCard.click(function() {
-        self.newCard();
+        self.newCard($(this).text());
       });
 
       $column.append($columnTitle);
@@ -114,9 +114,9 @@ $(document).ready(function() {
 
   //Protosy - Column
 
-  Column.prototype.newCard = function() {
+  Column.prototype.newCard = function(name) {
     var self = this;
-    var newCard = setName();
+    var newCard = setName(name);
     if (newCard != null) {
       $.ajax({
         url: baseUrl + '/card',
@@ -153,7 +153,7 @@ $(document).ready(function() {
 
   Column.prototype.changeColumnName = function() {
     var self = this;
-    var newName = setName();
+    var newName = setName(this.name);
     if (newName != null) {
       $.ajax({
         url: baseUrl + '/column/' + self.id,
@@ -185,7 +185,7 @@ $(document).ready(function() {
     },
     changeCardName: function() {
       var self = this;
-      var newName = setName();
+      var newName = setName(this.name);
       if (newName != null) {
         $.ajax({
           url: baseUrl + '/card/' + self.id,
@@ -206,12 +206,12 @@ $(document).ready(function() {
   //Funkcje do tworzenia elementów Kanban
 
   function newColumn() {
-    var columnName = setName();
+    var columnName = setName($(this).text());
     setNewColumn(columnName);
   }
 
-  function setName() {
-    var temp = prompt('Enter a name', 'New Element');
+  function setName(oldName) {
+    var temp = prompt('Enter a name', oldName);
     if (temp == '') temp = 'No name given';
     return temp;
   }
